@@ -4,12 +4,13 @@ build_image:
   variables:
     REGISTRY_URL: "oci.vvtechsolutions.eu"
     IMAGE_NAME: "kube-lens"
-    # Buildah a besoin de l'isolation 'chroot' s'il n'est pas en mode privilégié
+
     BUILDAH_ISOLATION: chroot
-  before_script:
-    - buildah login -u "$REGISTRY_USER" -p "$REGISTRY_PASSWORD" "$REGISTRY_URL"
+    STORAGE_DRIVER: vfs
   script:
-    - buildah build \
+    - echo "$REGISTRY_PASSWORD" | buildah login -u "$REGISTRY_USER" --password-stdin "$REGISTRY_URL"
+    - |
+      buildah build \
         --format docker \
         --platform linux/amd64,linux/arm64 \
         --tag "$REGISTRY_URL/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
