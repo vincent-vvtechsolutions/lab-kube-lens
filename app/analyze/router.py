@@ -1,52 +1,77 @@
-from fastapi import APIRouter, HTTPException
+import json
 import requests
+from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 
+from app.services.ai_service import ai_service
 from app.settings import settings
 from app.analyze.models import LogRequest
 
 
 MODEL = "qwen2.5:0.5b"
 
-KNOWLEDGE_BASE = {
-    "OOMKilled": "Procédure P-042: Augmenter 'resources.limits.memory' de 25%. Vérifier les fuites de mémoire Node.js.",
-    "Connection refused": "Procédure P-102: Vérifier le SecurityGroup du RDS et le service K8s endpoint.",
-    "504 Gateway Timeout": "Procédure P-088: Vérifier le timeout de l'Ingress Nginx (proxy-read-timeout)."
-}
-
 router = APIRouter(
     prefix="/analyze",
 )
 
 @router.post("/")
-async def analyze_log(request: LogRequest):
-    # Mock RAG : On cherche un mot clé simple dans le log
-    rag_context = "Aucune procédure spécifique trouvée."
-    for key, procedure in KNOWLEDGE_BASE.items():
-        if key.lower() in request.content.lower():
-            rag_context = procedure
-            break
+async def analyze_log(request: LogRequest, locale: str = "en"):
+    async def generator():
 
-    prompt = (
-        f"Tu es un expert SRE. Analyse ce log et réponds UNIQUEMENT en JSON.\n"
-        f"DOC RÉFÉRENCE: {rag_context}\n"
-        f"LOG: {request.content}"
-    )
+        yield json.dumps({"status": "searching"}) + "\n"
 
-    payload = {
-        "model": MODEL,
-        "messages": [
-            {"role": "system", "content": "Format JSON strict: {'statut': 'CRITIQUE'|'WARNING', 'service': 'nom', 'cause': 'raison', 'solution': 'action'}"},
-            {"role": "user", "content": prompt}
-        ],
-        "format": "json",
-        "stream": False,
-        "options": {"temperature": 0.1, "num_ctx": 1024}
-    }
+        procedure_obj = ai_service.find_best_procedure(request.content)
 
-    try:
-        response = requests.post(f"{settings.ollama_url}/chat", json=payload, timeout=15)
-        response.raise_for_status()
-        return response.json()["message"]["content"]
-    except Exception as e:
-        print(f"Error calling Ollama API: {e}") # module 'app.settings' has no attribute 'ollama_url'
-        raise HTTPException(status_code=500, detail="L'IA est indisponible ou a expiré.")
+        if procedure_obj:
+            yield json.dumps({
+                "status": "procedure_found", 
+                "procedure_title": procedure_obj.get("title") if procedure_obj else None,
+                "procedure_content": procedure_obj.get("content") if procedure_obj else None
+            }) + "\n"
+
+        yield json.dumps({"status": "reasoning"}) + "\n"
+
+        system_prompt = (
+            f"Act as a Senior SRE. Use the provided RAG procedure to diagnose the logs. "
+            f"Language: {locale}. "
+            "Rules: "
+            "1. Respond ONLY in valid JSON. "
+            "2. Use these keys: 'status' (CRITICAL/WARNING), 'service', 'namespace', 'cause', 'solution'. "
+            "3. Keep the 'solution' actionable and technical."
+            "4. EVERY value must be a simple string. NO nested objects or braces {} inside values."
+        )
+
+        print("System Prompt:", system_prompt)
+
+        user_content = f"""
+        PROCEDURE: {procedure_obj.get('content', 'No specific procedure found.') if procedure_obj else 'No specific procedure found.'}
+        LOGS:
+        {request.content}
+        """
+
+        print("User Content:", user_content)
+
+        payload = {
+            "model": MODEL,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
+            ],
+            "format": "json",
+            "stream": True, 
+            "options": {"temperature": 0.1}
+        }
+
+        response = requests.post(f"{settings.ollama_url}/chat", json=payload, stream=True)
+
+        fullContent = ""
+        for line in response.iter_lines():
+            if line:
+                chunk = json.loads(line)
+                content = chunk.get("message", {}).get("content", "")
+                fullContent += content
+                yield json.dumps({"status": "streaming", "chunk": content}) + "\n"
+
+        print("Final Response:", fullContent)
+    
+    return StreamingResponse(generator(), media_type="application/x-ndjson")
