@@ -2,7 +2,6 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PATH="/home/appuser/.local/bin:${PATH}" \
     PYTHONPATH="/app/src"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,7 +14,7 @@ WORKDIR /app
 
 COPY --chown=appuser:appuser pyproject.toml .
 COPY --chown=appuser:appuser src/ ./src/
-RUN pip install --no-cache-dir --user .
+RUN pip install --no-cache-dir .
 
 EXPOSE 8000
 

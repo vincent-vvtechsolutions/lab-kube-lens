@@ -3,9 +3,9 @@ import requests
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
-from .services.ai_service import ai_service
-from .settings import settings
-from .analyze.models import LogRequest
+from ..services.ai_service import ai_service
+from ..settings import settings
+from ..analyze.models import LogRequest
 
 
 MODEL = "qwen2.5:0.5b"
