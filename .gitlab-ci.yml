@@ -4,15 +4,18 @@ build_image:
   variables:
     REGISTRY_URL: "oci.vvtechsolutions.eu"
     IMAGE_NAME: "kube-lens"
-
     BUILDAH_ISOLATION: chroot
     STORAGE_DRIVER: vfs
-  script:
+  before_script:
+    # On enregistre les binaires QEMU sur l'hôte k3s pour permettre le cross-build
+    # Cette étape nécessite que le runner ait les droits privilégiés
+    - podman run --rm --privileged multiarch/qemu-user-static --reset -p yes || true
     - echo "$REGISTRY_PASSWORD" | buildah login -u "$REGISTRY_USER" --password-stdin "$REGISTRY_URL"
+  script:
     - |
       buildah build \
         --format docker \
-        --platform linux/amd64,linux/arm64 \
+        --platform linux/arm64 \
         --tag "$REGISTRY_URL/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
         --tag "$REGISTRY_URL/$IMAGE_NAME:latest" \
         .
