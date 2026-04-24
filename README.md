@@ -1,9 +1,10 @@
 # 🔍 KubeLens
 
-KubeLens is an AI-powered Kubernetes log analysis and monitoring API. It leverages a Retrieval-Augmented Generation (RAG) engine to identify cluster anomalies and suggest remediations based on your specific log history.
+KubeLens is an AI-powered Kubernetes log analysis and monitoring API.  
+It leverages a Retrieval-Augmented Generation (RAG) engine to identify cluster anomalies and suggest remediations based on an embedded knowledge base.
 
 ## 🚀 Key Features
-- **ARM64 Native**: Optimized for ARM-based infrastructure (Scaleway Kapsule AMP2 nodes).
+- **ARM64 Native**: Optimized for ARM-based infrastructure (Scaleway Kapsule nodes).
 - **RAG Engine**: Vector indexing via Qdrant and LLM analysis via Ollama.
 - **Secure by Design**: Integrated with Kubernetes External Secrets (ESO) for credential management and Zot OCI Registry for secure image storage.
 - **Modern Structure**: Follows the `src-layout` standard and PEP 621 (`pyproject.toml`).
@@ -33,6 +34,6 @@ buildah build --arch arm64 -t oci.vvtechsolutions.eu/kube-lens:latest .
 
 - Backend: FastAPI, Pydantic v2
 - Vector Database: Qdrant
-- LLM Integration: LangChain / Ollama
+- LLM Integration: Ollama
 - Infrastructure: Kubernetes (Scaleway Kapsule ARM)
 - CI/CD: GitLab CI + Buildah (with QEMU emulation for cross-platform building)
