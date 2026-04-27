@@ -1,3 +1,8 @@
+stages:
+  - build
+  - test
+  - security
+
 build_image:
   stage: build
   image: quay.io/buildah/stable:latest
@@ -23,3 +28,11 @@ build_image:
     # Source: https://github.com/containers/buildah/blob/main/docs/buildah-build.1.md
   only:
     - main
+
+scan_image:
+  stage: security
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  script:
+    - trivy image --severity HIGH,CRITICAL --exit-code 1 "$REGISTRY_URL/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
