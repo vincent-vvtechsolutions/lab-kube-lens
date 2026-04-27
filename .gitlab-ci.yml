@@ -36,5 +36,25 @@ scan_image:
   image:
     name: aquasec/trivy:latest
     entrypoint: [""]
+  variables:    
+    GIT_STRATEGY: none
+    TRIVY_NO_PROGRESS: "true"
+    TRIVY_CACHE_DIR: ".trivycache/"
+    FULL_IMAGE_NAME: $REGISTRY_URL/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA
   script:
-    - trivy image --severity HIGH,CRITICAL --exit-code 1 "$REGISTRY_URL/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+    - trivy --version
+    - time trivy image --download-db-only
+
+    - echo "$REGISTRY_PASSWORD" | trivy registry login --username "$REGISTRY_USER" --password-stdin "$REGISTRY_URL"
+    - time trivy image --exit-code 0 --format template --template "@/contrib/gitlab.tpl" --output "$CI_PROJECT_DIR/gl-container-scanning-report.json" "$FULL_IMAGE_NAME"
+    - time trivy image --exit-code 0 "$FULL_IMAGE_NAME"
+    - time trivy image --exit-code 1 --severity CRITICAL "$FULL_IMAGE_NAME"
+  cache:
+    paths:
+      - .trivycache/
+  artifacts:
+    paths:
+      - gl-container-scanning-report.json
+    when: always
+  allow_failure: false
+
