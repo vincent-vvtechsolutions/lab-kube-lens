@@ -78,5 +78,6 @@ class AIService:
         best_point = response.points[0]
         return best_point.payload
 
+
 # Singleton instance used throughout the application.
 ai_service = AIService()

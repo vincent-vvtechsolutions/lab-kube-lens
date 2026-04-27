@@ -1,6 +1,8 @@
 """Main entry point for the FastAPI application.
 
-The module configures the FastAPI instance, applies CORS middleware, exposes a health‑check endpoint and mounts the analyze router.
+The module configures the FastAPI instance, applies CORS middleware,
+exposes a health‑check endpoint and mounts the analyze router.
+
 """
 
 from fastapi import FastAPI
@@ -20,9 +22,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Health‑check endpoint for monitoring and CI health checks
 @app.get("/health")
 async def health():
     return {"status": "OK"}
+
+
 # Mount the analysis routes under /analyze
 app.include_router(analyze_router)
