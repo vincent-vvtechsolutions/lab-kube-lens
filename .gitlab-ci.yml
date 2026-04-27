@@ -1,11 +1,19 @@
 stages:
+  - lint
   - build
-  - test
   - security
 
 variables:
   REGISTRY_URL: "oci.vvtechsolutions.eu"
   IMAGE_NAME: "kube-lens"
+
+lint_python:
+  stage: lint
+  image: python:3.12-slim
+  script:
+    - pip install ruff
+    - ruff check src/
+    - ruff format --check src/
 
 build_image:
   stage: build
