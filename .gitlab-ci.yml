@@ -11,7 +11,6 @@ build_image:
   script:
     - |
       buildah build \
-        --format docker \
         --platform linux/arm64 \
         --tag "$REGISTRY_URL/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" \
         --tag "$REGISTRY_URL/$IMAGE_NAME:latest" \
@@ -21,5 +20,6 @@ build_image:
         .
     - buildah push "$REGISTRY_URL/$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
     - buildah push "$REGISTRY_URL/$IMAGE_NAME:latest"
+    # Source: https://github.com/containers/buildah/blob/main/docs/buildah-build.1.md
   only:
     - main
