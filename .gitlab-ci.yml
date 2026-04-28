@@ -1,5 +1,6 @@
 stages:
   - lint
+  - test
   - build
   - security
 
@@ -11,9 +12,23 @@ lint_python:
   stage: lint
   image: python:3.12-slim
   script:
-    - pip install ruff
+    - pip install -e .[dev]
     - ruff check src/
     - ruff format --check src/
+    - mypy src/
+    - deptry .
+
+test_python:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - pip install -e .[dev]
+    - pytest --cov=src --cov-report=xml
+  artifacts:
+    reports:
+      cobertura: coverage.xml
+  only:
+    - main
 
 build_image:
   stage: build
@@ -65,4 +80,3 @@ scan_image:
       - gl-container-scanning-report.json
     when: always
   allow_failure: false
-
