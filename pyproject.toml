@@ -12,7 +12,8 @@ dependencies = [
     "pydantic-settings==2.13.1",
     "qdrant-client==1.17.1",
     "requests==2.33.1",
-    "uvicorn==0.43.0"
+    "uvicorn==0.43.0",
+    "httpx==0.28.1"
 ]
 
 [project.optional-dependencies]
@@ -35,6 +36,10 @@ ignore = []
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
+
+[tool.deptry]
+known_first_party = ["app"]
+optional_dependencies_dev_groups = ["dev"]
 
 [tool.fastapi]
 entrypoint = "app.main:app"
